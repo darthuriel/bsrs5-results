@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BSRS-5檢測結果查詢</title>
+    <style>
+        body {
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            margin: 0;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .search-section {
+            margin: 30px 0;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+        
+        .input-group input:focus {
+            outline: none;
+            border-color: #4285f4;
+        }
+        
+        .search-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #4285f4 0%, #34a853 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .search-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .search-btn:active {
+            transform: translateY(0);
+        }
+        
+        .loading {
+            text-align: center;
+            margin: 20px 0;
+            display: none;
+        }
+        
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4285f4;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .result-found {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin: 20px 0;
+            display: none;
+            text-align: center;
+        }
+        
+        .result-found h3 {
+            margin-bottom: 15px;
+        }
+        
+        .result-link {
+            display: inline-block;
+            background: white;
+            color: #28a745;
+            padding: 12px 25px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-top: 15px;
+            transition: transform 0.2s;
+        }
+        
+        .result-link:hover {
+            transform: scale(1.05);
+        }
+        
+        .error-msg {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            display: none;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .tips {
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        
+        .tips h3 {
+            color: #1565c0;
+            margin-bottom: 15px;
+        }
+        
+        .tips ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        
+        .tips li {
+            margin-bottom: 8px;
+            color: #333;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+            
+            .header h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 BSRS-5檢測結果查詢</h1>
+            <p>請輸入您的填答者編號，系統將為您找出最新的檢測結果</p>
+        </div>
+        
+        <div class="search-section">
+            <div class="input-group">
+                <label for="userNumber">📝 填答者編號</label>
+                <input type="text" id="userNumber" placeholder="請輸入您在表單中填寫的編號" />
+            </div>
+            
+            <button class="search-btn" onclick="searchResult()">
+                🔍 查詢我的檢測結果
+            </button>
+        </div>
+        
+        <div id="loading" class="loading">
+            <div class="loading-spinner"></div>
+            <div>正在搜尋您的檢測結果，請稍候...</div>
+        </div>
+        
+        <div id="resultFound" class="result-found">
+            <h3>🎉 找到您的檢測結果了！</h3>
+            <p>您的BSRS-5心情溫度計檢測已完成分析</p>
+            <a id="reportLink" href="#" target="_blank" class="result-link">
+                📊 查看我的詳細檢測報告
+            </a>
+        </div>
+        
+        <div id="errorMsg" class="error-msg">
+            <strong>❌ 查詢失敗</strong>
+            <p id="errorText">找不到您的檢測結果，請檢查填答者編號是否正確，或稍等1-2分鐘後再試。</p>
+        </div>
+        
+        <div class="tips">
+            <h3>💡 查詢小貼士</h3>
+            <ul>
+                <li><strong>填答者編號</strong>：請輸入您在表單第一題填寫的編號</li>
+                <li><strong>等待時間</strong>：檢測結果需要1-2分鐘生成，請耐心等候</li>
+                <li><strong>找不到結果</strong>：請確認編號無誤，或稍後再試</li>
+                <li><strong>技術問題</strong>：如持續無法查詢，請聯繫管理員</li>
+                <li><strong>隱私保護</strong>：您的檢測結果僅限本人查看</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // 這裡需要替換為您的實際資料來源
+        // 可以是Google Sheets API或其他資料庫
+        
+        async function searchResult() {
+            const userNumber = document.getElementById('userNumber').value.trim();
+            
+            if (!userNumber) {
+                showError('請輸入填答者編號');
+                return;
+            }
+            
+            // 顯示載入狀態
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('resultFound').style.display = 'none';
+            document.getElementById('errorMsg').style.display = 'none';
+            
+            try {
+                // 模擬查詢過程（實際使用時需要替換為真實的API呼叫）
+                await simulateSearch(userNumber);
+                
+            } catch (error) {
+                showError('系統暫時無法查詢，請稍後再試');
+            }
+        }
+        
+        // 模擬查詢函數（實際實作時需要替換）
+        async function simulateSearch(userNumber) {
+            // 這裡示範如何查詢，實際使用時需要連接到您的資料來源
+            
+            // 方法1: 使用Google Sheets API (需要API Key)
+            /*
+            const SHEET_ID = 'YOUR_GOOGLE_SHEET_ID';
+            const API_KEY = 'YOUR_GOOGLE_API_KEY';
+            const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/A:M?key=${API_KEY}`);
+            const data = await response.json();
+            
+            if (data.values) {
+                for (let i = 1; i < data.values.length; i++) {
+                    const row = data.values[i];
+                    if (row[2] === userNumber && row[12]) { // C欄是編號，M欄是結果連結
+                        showResult(row[12]);
+                        return;
+                    }
+                }
+            }
+            */
+            
+            // 模擬延遲
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // 模擬找到結果（實際使用時移除此部分）
+            if (userNumber.length > 0) {
+                // 這裡生成示例連結，實際使用時會是從資料庫查詢到的真實連結
+                const sampleUrl = `https://yourusername.github.io/bsrs5-results/?user=${encodeURIComponent(userNumber)}&bsrs=8&suicide=1&result=${encodeURIComponent('【輕度情緒困擾】建議您找家人或朋友談談，適度抒發情緒。')}`;
+                showResult(sampleUrl);
+            } else {
+                showError('找不到對應的檢測結果');
+            }
+        }
+        
+        function showResult(resultUrl) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('reportLink').href = resultUrl;
+            document.getElementById('resultFound').style.display = 'block';
+        }
+        
+        function showError(message) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('errorText').textContent = message;
+            document.getElementById('errorMsg').style.display = 'block';
+        }
+        
+        // 按Enter鍵搜尋
+        document.getElementById('userNumber').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchResult();
+            }
+        });
+        
+        // 檢查URL參數，如果有用戶編號就自動填入
+        window.addEventListener('load', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const userFromUrl = urlParams.get('user');
+            if (userFromUrl) {
+                document.getElementById('userNumber').value = userFromUrl;
+            }
+        });
+    </script>
+</body>
+</html>
